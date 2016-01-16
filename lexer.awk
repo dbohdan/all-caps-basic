@@ -7,18 +7,21 @@ function is_whitespace(s) {
     return match(s, /[ \t\n]+/);
 }
 
-function add_token(token_type, token_value) {
+function emit_token(token_type, token_value) {
     type[count] = token_type
     value[count] = token_value
     count++
 }
 
+# Below, function arguments after the four spaces in the function declaration
+# are used to create local variables. They are not expected to be used when
+# calling the function.
 function read_literal(keyword,    actual, success) {
     actual = substr(content, offset + 1, length(keyword))
     success = 0
 
     if (actual == keyword) {
-        add_token(keyword, "")
+        emit_token(keyword, "")
         offset += length(keyword)
         success = 1
     }
@@ -47,7 +50,7 @@ function read_identifier(    ident, success, c) {
         exit 1
     }
 
-    add_token("IDENT", ident)
+    emit_token("IDENT", ident)
 }
 
 function read_number(    number, success, float, c) {
@@ -80,9 +83,9 @@ function read_number(    number, success, float, c) {
     }
 
     if (float) {
-        add_token("FLOAT", number)
+        emit_token("FLOAT", number)
     } else {
-        add_token("INTEGER", number)
+        emit_token("INTEGER", number)
     }
 }
 
@@ -116,12 +119,12 @@ function read_string(    string, escape, success, c) {
         exit 1
     }
 
-    add_token("STRING", string)
+    emit_token("STRING", string)
 }
 
 
 BEGIN {
-     content = ""
+    content = ""
     count = 0
     line = 0
     # type
@@ -160,10 +163,10 @@ END {
         } else if (c == "\"") {
             read_string()
         } else if (match(c, /[+\-/\*%]/)) {
-            add_token("NUM_OP", c)
+            emit_token("NUM_OP", c)
             offset++
         } else if (c == "&") {
-            add_token("STR_OP", c)
+            emit_token("STR_OP", c)
             offset++
         } else if (match(c, /[(),=]/)) {
             read_literal(c)
@@ -173,7 +176,7 @@ END {
         } else if ((c == "\n") || (c == ":")) {
             # Ignore repeated newlines.
             if (!escape_newline && !(type[count - 1] == "NEWLINE")) {
-                add_token("NEWLINE", "")
+                emit_token("NEWLINE", "")
             }
             escape_newline = 0
             line++
@@ -186,7 +189,10 @@ END {
             offset++
         }
     }
-    for (i = 0; i < count; i++) {
-        printf "%05d %s %s\n", i, type[i], value[i]
+    for (i = 1; i < count; i++) {
+        printf "%s %s\n", type[i], value[i]
+        if (type[i] == "NEWLINE") {
+            printf "\n"
+        }
     }
 }
