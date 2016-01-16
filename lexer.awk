@@ -121,7 +121,7 @@ function read_string(    string, escape, success, c) {
 
 
 BEGIN {
-    # content = ""
+     content = ""
     count = 0
     line = 0
     # type
@@ -160,20 +160,28 @@ END {
         } else if (c == "\"") {
             read_string()
         } else if (match(c, /[+\-/\*%]/)) {
-            type[count] = "NUM_OP"
-            value[count] = c
-            count++
+            add_token("NUM_OP", c)
             offset++
         } else if (c == "&") {
-            type[count] = "STR_OP"
-            value[count] = c
-            count++
+            add_token("STR_OP", c)
             offset++
         } else if (match(c, /[(),=]/)) {
             read_literal(c)
+        } else if (c == "\\") {
+            escape_newline = 1
+            offset++
+        } else if ((c == "\n") || (c == ":")) {
+            # Ignore repeated newlines.
+            if (!escape_newline && !(type[count - 1] == "NEWLINE")) {
+                add_token("NEWLINE", "")
+            }
+            escape_newline = 0
+            line++
+            offset++
         } else {
-            if (c == "\n") {
-                line++
+            if (escape_newline) {
+                printf "Error: expected a newline after '\\' at line %d\n", line
+                exit 1
             }
             offset++
         }
