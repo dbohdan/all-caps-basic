@@ -33,22 +33,15 @@ function read_literal(keyword,    actual, success) {
     }
 }
 
-function read_identifier(    ident, success, c) {
+function read_identifier(    ident, c) {
     ident = char()
     offset++
-    success = 1
     do {
         ident = ident c
         c = char()
         offset++
     } while (match(c, /[a-zA-Z0-9_]/))
     offset--
-
-    if (!success) {
-        printf "Error: expected an identifier but got '%s' on line %d\n", \
-                ident, line
-        exit 1
-    }
 
     emit_token("IDENT", ident)
 }
@@ -107,6 +100,8 @@ function read_string(    string, escape, success, c) {
         } else {
             if (c == "\"") {
                 break
+            } else if (c == "\n") {
+                c = "\\n"
             } else if (c == "\\") {
                 escape = 1
             }
@@ -115,7 +110,8 @@ function read_string(    string, escape, success, c) {
     }
 
     if (!success) {
-        printf "Error: expected a string but got '%s' on line %d\n", string, line
+        printf "Error: expected a string but got '%s' on line %d\n", \
+                string, line
         exit 1
     }
 
@@ -183,7 +179,8 @@ END {
             offset++
         } else {
             if (escape_newline) {
-                printf "Error: expected a newline after '\\' at line %d\n", line
+                printf "Error: expected a newline after '\\' at line %d\n", \
+                        line
                 exit 1
             }
             offset++
