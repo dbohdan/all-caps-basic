@@ -10,6 +10,7 @@ function is_whitespace(s) {
 function emit_token(token_type, token_value) {
     type[count] = token_type
     value[count] = token_value
+    source[count] = line
     count++
 }
 
@@ -121,10 +122,11 @@ function read_string(    string, escape, success, c) {
 
 BEGIN {
     content = ""
-    count = 0
-    line = 0
-    # type
-    # value
+    count = 0 # Token counter.
+    line = 0 # Source code line counter.
+    type[0] = "" # Token type.
+    value[0] = "" # Token value.
+    source[0] = "" # The source code line the token came from.
 }
 
 1 {
@@ -158,7 +160,7 @@ END {
             read_number()
         } else if (c == "\"") {
             read_string()
-        } else if (match(c, /[+\-/\*%]/)) {
+        } else if (match(c, /([\+\/*%\-])/)) {
             emit_token("NUM_OP", c)
             offset++
         } else if (c == "&") {
@@ -187,7 +189,7 @@ END {
         }
     }
     for (i = 1; i < count; i++) {
-        printf "%s %s\n", type[i], value[i]
+        printf "%s %s %s\n", source[i], type[i], value[i]
         if (type[i] == "NEWLINE") {
             printf "\n"
         }
