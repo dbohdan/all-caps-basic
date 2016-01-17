@@ -119,7 +119,7 @@ function read_string(    string, escape, success, c) {
         exit 1
     }
 
-    emit_token("STRING", string)
+    emit_token("STRING", "\"" string "\"")
 }
 
 
