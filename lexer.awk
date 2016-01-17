@@ -1,4 +1,7 @@
 #!/usr/bin/awk -f
+# Lexical analyzer. Take source code from the standard input and transform it
+# into a stream of token in the standard output.
+
 function char() {
     return substr(content, offset + 1, 1)
 }
@@ -140,7 +143,11 @@ END {
     while (offset < len) {
         c = char()
 
-        if (c == "E") {
+        if (c == "A") {
+            read_literal("AND")
+            type[count - 1] = "NUM_OP"
+            value[count - 1] = "AND"
+        } else if (c == "E") {
             read_literal("END")
         } else if (c == "F") {
             read_literal("FOR")
@@ -148,12 +155,22 @@ END {
             read_literal("IF")
         } else if (c == "L") {
             read_literal("LET")
+        } else if (c == "O") {
+            read_literal("OR")
+            type[count - 1] = "NUM_OP"
+            value[count - 1] = "OR"
         } else if (c == "P") {
             read_literal("PRINT")
         } else if (c == "R") {
             read_literal("RETURN")
         } else if (c == "S") {
             read_literal("SUB")
+        } else if (c == "T") {
+            read_literal("TO")
+        } else if (c == "X") {
+            read_literal("XOR")
+            type[count - 1] = "NUM_OP"
+            value[count - 1] = "XOR"
         } else if (match(c, /[a-z]/)) {
             read_identifier()
         } else if (match(c, /[0-9]/)) {
