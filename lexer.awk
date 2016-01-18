@@ -77,6 +77,10 @@ END {
             read_literal("AND")
             type[count - 1] = "NUM_OP"
             value[count - 1] = "AND"
+        } else if (c == "B") {
+            read_literal("BREAK")
+        } else if (c == "C") {
+            read_literal("CONTINUE")
         } else if (c == "E") {
             read_literal("END")
         } else if (c == "F") {
@@ -107,13 +111,13 @@ END {
             read_number()
         } else if (c == "\"") {
             read_string()
-        } else if (match(c, /([\+\/*%\-])/)) {
+        } else if (match(c, /([\+\/*%\-=])/)) {
             emit_token("NUM_OP", c)
             offset++
         } else if (c == "&") {
             emit_token("STR_OP", c)
             offset++
-        } else if (match(c, /[(),=]/)) {
+        } else if (match(c, /[(),]/)) {
             read_literal(c)
         } else if (c == "\\") {
             escape_newline = 1

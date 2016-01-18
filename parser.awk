@@ -13,8 +13,13 @@ function skip_newline() {
     }
 }
 
-function expect_token(t,    current_value) {
+function expect_token(t, v,   current_value) {
     if (type[current] == t) {
+        if (v != "" && value[current] != v) {
+            printf "Error: expected token '%s' but got '%s' on line %d\n",
+                    v, value[current], source[current]
+            exit 1
+        }
         current_value = value[current]
         current++
     } else {
@@ -77,7 +82,7 @@ function parse_sub(    ident, list_end) {
 function parse_assignment(    ident, temp) {
     expect_token("LET")
     ident = expect_token("IDENT")
-    expect_token("=")
+    expect_token("NUM_OP", "=")
     temp = parse_expression()
     emit("SET " ident " " temp)
 }
@@ -88,31 +93,36 @@ function parse_return(    temp) {
     emit("RETURN " temp)
 }
 
-function parse_for_loop(    ident, start, end, temp,
-        label_loop_start, label_loop_end) {
+function parse_for_loop(    ident, start, end, temp, current_loop_start) {
     expect_token("FOR")
     ident = expect_token("IDENT")
-    expect_token("=")
+    expect_token("NUM_OP", "=")
     start = parse_expression()
     expect_token("TO")
     end = parse_expression()
 
-    label_loop_start = make_label()
-    label_loop_end = make_label()
+    current_loop_start = make_label()
     temp = make_temp_var()
+
+    # Globals.
+    current_loop_end[loop_count] = make_label()
+    current_loop_after[loop_count] = make_label()
+    loop_count++
 
     emit("SET " ident " " start)
     emit("SET> " temp " " ident " " end)
-    emit("JNZ " label_loop_end " " temp)
-    emit("LABEL " label_loop_start)
+    emit("JNZ " current_loop_after[loop_count - 1] " " temp)
+    emit("LABEL " current_loop_start)
     while (curr_token_type() != "END") {
         parse_statement()
     }
     expect_token("END")
+    emit("LABEL " current_loop_end[loop_count - 1])
     emit("SET< " temp " " ident " " end)
     emit("INCR " ident)
-    emit("JNZ " label_loop_start " " temp)
-    emit("LABEL " label_loop_end)
+    emit("JNZ " current_loop_start " " temp)
+    emit("LABEL " current_loop_after[loop_count - 1])
+    loop_count--
 }
 
 function parse_conditional(    temp, label) {
@@ -129,7 +139,15 @@ function parse_conditional(    temp, label) {
 
 function parse_statement(    ctt) {
     ctt = curr_token_type()
-    if (ctt == "FOR") {
+    if (ctt == "BREAK") {
+        emit("JMP " current_loop_after[loop_count - 1])
+        current++
+        skip_newline()
+    } else if (ctt == "CONTINUE") {
+        emit("JMP " current_loop_end[loop_count - 1])
+        current++
+        skip_newline()
+    } else if (ctt == "FOR") {
         parse_for_loop()
     } else if (ctt == "IF") {
         parse_conditional()
@@ -142,7 +160,8 @@ function parse_statement(    ctt) {
     } else if (ctt == "IDENT") {
         parse_function_call()
     } else {
-        printf "Error: expected a statement but got '%s'\n", ctt
+        printf "Error: expected a statement but got '%s' on line %d\n",
+                ctt, source[current]
         exit 1
     }
 }
@@ -180,7 +199,7 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
         ctt = type[current]
         ctv = value[current]
         current++
-        if (ctt == "IDENT" || ctt == "NOT" || is_literal_type(ctt)) {
+        if (ctt == "IDENT" || is_literal_type(ctt)) {
             if (ctt == "IDENT" && type[current] == "(") {
                 op_stack[size] = ctv
                 argc = type[current + 1] == ")" ? 0 : 1
@@ -261,6 +280,9 @@ BEGIN {
     count = 0
     temp_var_count = 0
     label_count = 0
+    loop_count = 0
+    current_loop_end[0] = ""
+    current_loop_after[0] = ""
 
     # Operator precedence.
     precedence["OR"] = 1
