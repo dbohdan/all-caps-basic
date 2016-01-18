@@ -9,5 +9,5 @@ SUB fib(n)
 END
 
 SUB main()
-    PRINT fib(5)
+    PRINT fib(10)
 END
