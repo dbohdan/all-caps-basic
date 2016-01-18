@@ -23,17 +23,13 @@ function read_literal(keyword,    actual, success) {
     actual = substr(content, offset + 1, length(keyword))
     success = 0
 
-    if (actual == keyword) {
+    if (toupper(actual) == keyword) {
         emit_token(keyword, "")
         offset += length(keyword)
         success = 1
     }
 
-    if (!success) {
-        printf "Error: expected keyword '%s' but got '%s' on line %d\n", \
-                keyword, actual, line
-        exit 1
-    }
+    return success
 }
 
 function read_identifier() {
@@ -60,6 +56,40 @@ BEGIN {
     type[0] = "" # Token type.
     value[0] = "" # Token value.
     source[0] = "" # The source code line the token came from.
+
+    literal_count = 0
+    literal[literal_count++] = "BREAK"
+    literal[literal_count++] = "CONTINUE"
+    literal[literal_count++] = "ELSEIF"
+    literal[literal_count++] = "ELSE"
+    literal[literal_count++] = "END"
+    literal[literal_count++] = "FOR"
+    literal[literal_count++] = "IF"
+    literal[literal_count++] = "LET"
+    literal[literal_count++] = "PRINT"
+    literal[literal_count++] = "RETURN"
+    literal[literal_count++] = "SUB"
+    literal[literal_count++] = "TO"
+    literal[literal_count++] = "WHILE"
+    literal[literal_count++] = ")"
+    literal[literal_count++] = "("
+    literal[literal_count++] = ","
+
+    num_op_count = 0
+    num_op[num_op_count++] = "AND"
+    num_op[num_op_count++] = "OR"
+    num_op[num_op_count++] = "XOR"
+    num_op[num_op_count++] = "+"
+    num_op[num_op_count++] = "-"
+    num_op[num_op_count++] = "*"
+    num_op[num_op_count++] = "/"
+    num_op[num_op_count++] = "%"
+    num_op[num_op_count++] = "="
+    num_op[num_op_count++] = "<="
+    num_op[num_op_count++] = ">="
+    num_op[num_op_count++] = "<"
+    num_op[num_op_count++] = ">"
+    num_op[num_op_count++] = "<>"
 }
 
 1 {
@@ -71,54 +101,40 @@ END {
     offset = 0
     len = length(content)
     while (offset < len) {
-        c = char()
+        matched = 0
 
-        if (c == "A") {
-            read_literal("AND")
-            type[count - 1] = "NUM_OP"
-            value[count - 1] = "AND"
-        } else if (c == "B") {
-            read_literal("BREAK")
-        } else if (c == "C") {
-            read_literal("CONTINUE")
-        } else if (c == "E") {
-            read_literal("END")
-        } else if (c == "F") {
-            read_literal("FOR")
-        } else if (c == "I") {
-            read_literal("IF")
-        } else if (c == "L") {
-            read_literal("LET")
-        } else if (c == "O") {
-            read_literal("OR")
-            type[count - 1] = "NUM_OP"
-            value[count - 1] = "OR"
-        } else if (c == "P") {
-            read_literal("PRINT")
-        } else if (c == "R") {
-            read_literal("RETURN")
-        } else if (c == "S") {
-            read_literal("SUB")
-        } else if (c == "T") {
-            read_literal("TO")
-        } else if (c == "X") {
-            read_literal("XOR")
-            type[count - 1] = "NUM_OP"
-            value[count - 1] = "XOR"
-        } else if (match(c, /[a-z]/)) {
+        for (i = 0; i < literal_count; i++) {
+            if (read_literal(literal[i])) {
+                matched = 1
+                break
+            }
+        }
+        if (matched) {
+            continue
+        }
+
+        for (i = 0; i < num_op_count; i++) {
+            if (read_literal(num_op[i])) {
+                value[count - 1] = type[count - 1]
+                type[count - 1] = "NUM_OP"
+                matched = 1
+                break
+            }
+        }
+        if (matched) {
+            continue
+        }
+
+        c = char()
+        if (match(c, /[a-zA-Z]/)) {
             read_identifier()
         } else if (match(c, /[0-9]/)) {
             read_number()
         } else if (c == "\"") {
             read_string()
-        } else if (match(c, /([\+\/*%\-=])/)) {
-            emit_token("NUM_OP", c)
-            offset++
         } else if (c == "&") {
             emit_token("STR_OP", c)
             offset++
-        } else if (match(c, /[(),]/)) {
-            read_literal(c)
         } else if (c == "\\") {
             escape_newline = 1
             offset++
