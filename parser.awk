@@ -1,6 +1,6 @@
 #!/usr/bin/awk -f
-# Parser. Take a steam of tokens and transform it into the intermediate
-# representation.
+# Parser. Takes a steam of tokens and transforms it into the intermediate
+# representation format.
 
 function emit(s) {
     printf "%s\n", s
@@ -88,23 +88,31 @@ function parse_return(    temp) {
     emit("RETURN " temp)
 }
 
-function parse_for_loop(    ident, start, end, temp, label) {
+function parse_for_loop(    ident, start, end, temp,
+        label_loop_start, label_loop_end) {
     expect_token("FOR")
     ident = expect_token("IDENT")
     expect_token("=")
     start = parse_expression()
     expect_token("TO")
     end = parse_expression()
-    label = make_label()
+
+    label_loop_start = make_label()
+    label_loop_end = make_label()
     temp = make_temp_var()
+
     emit("SET " ident " " start)
-    emit("LABEL " label)
+    emit("SET> " temp " " ident " " end)
+    emit("JNZ " label_loop_end " " temp)
+    emit("LABEL " label_loop_start)
     while (curr_token_type() != "END") {
         parse_statement()
     }
     expect_token("END")
-    emit("SET= " temp " " ident " " end)
-    emit("JNZ " label " " temp)
+    emit("SET< " temp " " ident " " end)
+    emit("INCR " ident)
+    emit("JNZ " label_loop_start " " temp)
+    emit("LABEL " label_loop_end)
 }
 
 function parse_conditional(    temp, label) {

@@ -1,4 +1,4 @@
-# Lexical analyzer. Take source code from the standard input and transform it
+# Lexical analyzer. Takes source code from the standard input and transforms it
 # into a stream of token in the standard output.
 
 function char() {
