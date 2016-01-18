@@ -103,6 +103,16 @@ END {
     while (offset < len) {
         matched = 0
 
+        if (read_literal("REM") || read_literal("#")) {
+            # Do not put the "REM" token in the output stream.
+            count--
+            while (char() != "\n") {
+                offset++
+            }
+            offset++
+            continue
+        }
+
         for (i = 0; i < literal_count; i++) {
             if (read_literal(literal[i])) {
                 matched = 1
