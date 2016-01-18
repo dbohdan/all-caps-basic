@@ -125,16 +125,56 @@ function parse_for_loop(    ident, start, end, temp, current_loop_start) {
     loop_count--
 }
 
-function parse_conditional(    temp, label) {
-    expect_token("IF")
-    label = make_label()
-    temp = parse_expression()
-    emit("JZ " label " " temp)
+function parse_while_loop(    ident, condition, current_loop_start) {
+    current_loop_start = make_label()
+    temp = make_temp_var()
+
+    # Globals.
+    current_loop_end[loop_count] = make_label()
+    current_loop_after[loop_count] = make_label()
+    loop_count++
+
+    expect_token("WHILE")
+    emit("LABEL " current_loop_start)
+
+    condition = parse_expression()
+    emit("JZ " current_loop_after[loop_count - 1] " " condition)
     while (curr_token_type() != "END") {
         parse_statement()
     }
     expect_token("END")
-    emit("LABEL " label)
+    emit("LABEL " current_loop_end[loop_count - 1])
+    emit("JMP " current_loop_start " " temp)
+    emit("LABEL " current_loop_after[loop_count - 1])
+    loop_count--
+}
+
+function parse_conditional(    condition, after_label, next_label) {
+    expect_token("IF")
+    after_label = make_label()
+    next_label = make_label()
+    condition = parse_expression()
+    emit("JZ " next_label " " condition)
+    while (curr_token_type() != "END") {
+        while (!(curr_token_type() == "ELSEIF" \
+                || curr_token_type() == "ELSE" \
+                || curr_token_type() == "END")) {
+            parse_statement()
+        }
+        emit("JMP " after_label)
+        emit("LABEL " next_label)
+        next_label = make_label()
+        if (curr_token_type() == "ELSEIF") {
+            expect_token("ELSEIF")
+            condition = parse_expression()
+            emit("JZ " next_label " " condition)
+        } else if (curr_token_type() == "ELSE") {
+            expect_token("ELSE")
+        }
+    }
+    emit("LABEL " next_label)
+    emit("LABEL " after_label)
+    expect_token("END")
 }
 
 function parse_statement(    ctt) {
@@ -157,6 +197,8 @@ function parse_statement(    ctt) {
         parse_print()
     } else if (ctt == "RETURN") {
         parse_return()
+    } else if (ctt == "WHILE") {
+        parse_while_loop()
     } else if (ctt == "IDENT") {
         parse_function_call()
     } else {
@@ -233,7 +275,7 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
                         source[current]
                 exit 1
             }
-            if (match(op_stack[size - 1], /[a-z][a-zA-Z0-9_]*/)) {
+            if (match(op_stack[size - 1], /[a-zA-Z][a-zA-Z0-9_]*/)) {
                 temp = make_temp_var()
                 printf "SETFUNC %s %s ", temp, op_stack[size - 1]
                 for (i = queue_size - argc; i < queue_size; i++) {

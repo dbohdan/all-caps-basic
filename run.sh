@@ -7,9 +7,9 @@ set -u
 awk="nawk"
 compiler_dir="$(dirname "$0")"
 input_file="$1"
-# $verbose & 1 -- show lexer output
-# $verbose & 2 -- show parser output
-# $verbose & 4 -- show codegen output
+# $verbose & 1 -- show lexer output.
+# $verbose & 2 -- show parser output.
+# $verbose & 4 -- show codegen output.
 verbose=7
 
 # Variables for internal use.
