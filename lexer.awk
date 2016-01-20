@@ -19,7 +19,7 @@ function emit_token(token_type, token_value) {
 # Below, function arguments after the four spaces in the function declaration
 # are used to create local variables. They are not expected to be used when
 # calling the function.
-function read_literal(keyword,    actual, success) {
+function read_exact(keyword,    actual, success) {
     actual = substr(content, offset + 1, length(keyword))
     success = 0
 
@@ -58,8 +58,11 @@ BEGIN {
     source[0] = "" # The source code line the token came from.
 
     literal_count = 0
+    literal[literal_count++] = "AS"
     literal[literal_count++] = "BREAK"
     literal[literal_count++] = "CONTINUE"
+    literal[literal_count++] = "DECLARE"
+    literal[literal_count++] = "DIM"
     literal[literal_count++] = "ELSEIF"
     literal[literal_count++] = "ELSE"
     literal[literal_count++] = "END"
@@ -75,21 +78,7 @@ BEGIN {
     literal[literal_count++] = "("
     literal[literal_count++] = ","
 
-    num_op_count = 0
-    num_op[num_op_count++] = "AND"
-    num_op[num_op_count++] = "OR"
-    num_op[num_op_count++] = "XOR"
-    num_op[num_op_count++] = "+"
-    num_op[num_op_count++] = "-"
-    num_op[num_op_count++] = "*"
-    num_op[num_op_count++] = "/"
-    num_op[num_op_count++] = "%"
-    num_op[num_op_count++] = "="
-    num_op[num_op_count++] = "<="
-    num_op[num_op_count++] = ">="
-    num_op[num_op_count++] = "<"
-    num_op[num_op_count++] = ">"
-    num_op[num_op_count++] = "<>"
+    set_up_op_tables()
 }
 
 1 {
@@ -103,8 +92,8 @@ END {
     while (offset < len) {
         matched = 0
 
-        if (read_literal("REM") || read_literal("#")) {
-            # Do not put the "REM" token in the output stream.
+        if (read_exact("REM") || read_exact("#")) {
+            # Do not put the comment start token in the output stream.
             count--
             while (char() != "\n") {
                 offset++
@@ -114,7 +103,19 @@ END {
         }
 
         for (i = 0; i < literal_count; i++) {
-            if (read_literal(literal[i])) {
+            if (read_exact(literal[i])) {
+                matched = 1
+                break
+            }
+        }
+        if (matched) {
+            continue
+        }
+
+        for (i = 0; i < bool_op_count; i++) {
+            if (read_exact(bool_op[i])) {
+                value[count - 1] = type[count - 1]
+                type[count - 1] = "BOOL_OP"
                 matched = 1
                 break
             }
@@ -124,7 +125,7 @@ END {
         }
 
         for (i = 0; i < num_op_count; i++) {
-            if (read_literal(num_op[i])) {
+            if (read_exact(num_op[i])) {
                 value[count - 1] = type[count - 1]
                 type[count - 1] = "NUM_OP"
                 matched = 1
@@ -135,6 +136,53 @@ END {
             continue
         }
 
+        for (i = 0; i < num_comp_count; i++) {
+            if (read_exact(num_comp[i])) {
+                value[count - 1] = type[count - 1]
+                type[count - 1] = "NUM_COMP"
+                matched = 1
+                break
+            }
+        }
+        if (matched) {
+            continue
+        }
+
+        for (i = 0; i < str_op_count; i++) {
+            if (read_exact(str_op[i])) {
+                value[count - 1] = type[count - 1]
+                type[count - 1] = "STR_OP"
+                matched = 1
+                break
+            }
+        }
+        if (matched) {
+            continue
+        }
+
+        for (i = 0; i < str_comp_count; i++) {
+            if (read_exact(str_comp[i])) {
+                value[count - 1] = type[count - 1]
+                type[count - 1] = "STR_COMP"
+                matched = 1
+                break
+            }
+        }
+        if (matched) {
+            continue
+        }
+
+        if (read_exact("TRUE")) {
+            value[count - 1] = "TRUE"
+            type[count - 1] = "BOOLEAN"
+            continue
+        }
+        if (read_exact("FALSE")) {
+            value[count - 1] = "FALSE"
+            type[count - 1] = "BOOLEAN"
+            continue
+        }
+
         c = char()
         if (match(c, /[a-zA-Z]/)) {
             read_identifier()
@@ -142,9 +190,6 @@ END {
             read_number()
         } else if (c == "\"") {
             read_string()
-        } else if (c == "&") {
-            emit_token("STR_OP", c)
-            offset++
         } else if (c == "\\") {
             escape_newline = 1
             offset++

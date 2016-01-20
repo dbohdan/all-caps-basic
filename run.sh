@@ -36,7 +36,7 @@ fi
 expr "$exit" >/dev/null && exit 1
 
 # Parse.
-$awk -f "$compiler_dir/parser.awk" \
+$awk -f "$compiler_dir/library.awk" -f "$compiler_dir/parser.awk" \
         <"$temp_lex_file" >"$temp_parse_file" || exit=1
 if expr "$verbose" / 2 % 2 >/dev/null; then
     echo '### Parser output ###'
@@ -45,7 +45,7 @@ if expr "$verbose" / 2 % 2 >/dev/null; then
     echo '### End parser output ###'
     echo ''
 fi
-expr "$exit" >/dev/null && exit 1
+expr "$exit" >/dev/null && exit 2
 
 # Generate code.
 $awk -f "$compiler_dir/library.awk" -f "$compiler_dir/codegen.awk" \
@@ -57,8 +57,15 @@ if expr "$verbose" / 4 % 2 >/dev/null; then
     echo '### end C code ###'
     echo ''
 fi
-expr "$exit" >/dev/null && exit 1
+expr "$exit" >/dev/null && exit 3
 
 # Compile and run.
-gcc "$temp_c_file" -o "$temp_bin_file"
-"$temp_bin_file"
+gcc \
+        -I"$compiler_dir/deps/sds" \
+        -I"$compiler_dir/include" \
+        -L"$compiler_dir/lib" \
+        "$temp_c_file" \
+        "$compiler_dir/deps/sds/sds.c" \
+        -o "$temp_bin_file" \
+        -lgc || exit 4
+"$temp_bin_file" || exit 5
