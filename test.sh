@@ -15,7 +15,7 @@ for file in test/*.bas; do
     error_output_file="$prefix.error"
     error=0
     if [ -e "$correct_output_file" ]; then
-        "$run" "$prefix.bas" >"$actual_output_file"
+        "$run" "$prefix.bas" >"$actual_output_file" || true
         diff "$correct_output_file" "$actual_output_file" || error=1
     elif [ -e "$error_output_file" ]; then
         "$run" "$prefix.bas" | tail -n 1 >"$actual_output_file" || true
