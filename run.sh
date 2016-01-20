@@ -3,17 +3,57 @@ set -e
 set -o pipefail
 set -u
 
+help() {
+    echo "Usage: $0 [-lpcv] filename.bas"
+}
+
 # Settings.
 awk="nawk"
 compiler_dir="$(dirname "$0")"
-input_file="$1"
 # $verbose & 1 -- show lexer output.
 # $verbose & 2 -- show parser output.
 # $verbose & 4 -- show codegen output.
-verbose=7
+verbose=0
+
+params="$(getopt lpcv $*)"
+set -- $params
+while [ $# -ne "1" ]
+do
+    case "$1" in
+        -l)
+            verbose="$(expr "$verbose" + 1)"
+            shift
+            ;;
+        -p)
+            verbose="$(expr "$verbose" + 2)"
+            shift
+            ;;
+        -c)
+            verbose="$(expr "$verbose" + 4)"
+            shift
+            ;;
+        -v)
+            verbose=7
+            shift
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            help
+            exit 77
+            ;;
+    esac
+done
 
 # Variables for internal use.
 exit=0
+if [ "$#" -eq "0" ] || [ ! -e "$1" ]; then
+    help
+    exit 99
+fi
+input_file="$1"
 temp_bin_file="$(mktemp)"
 temp_c_file="$(mktemp).c"
 temp_lex_file="$(mktemp)"
