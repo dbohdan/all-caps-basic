@@ -138,8 +138,9 @@ function _read_number(    number, success, float, c) {
     offset--
 
     if (!success) {
-        printf "Error: expected a number but got '%s' on line %d\n", \
-                number, line
+        printf "Error: expected a number but got '%s' on line %d of " \
+                "file '%s'\n",
+                number, line, filename
         exit 1
     }
 
@@ -175,8 +176,9 @@ function _read_string(    string, escape, success, c) {
     }
 
     if (!success) {
-        printf "Error: expected a string but got '%s' on line %d\n", \
-                string, line
+        printf "Error: expected a string but got '%s' on line %d of " \
+                "file '%s'\n", \
+                string, line, filename
         exit 1
     }
 

@@ -84,8 +84,8 @@ function type2c(type_name) {
     if (type_name in type2c_table) {
         return type2c_table[type_name]
     } else {
-        printf "Error: unknown type '%s' on line %d\n",
-                type_name, line
+        printf "Error: unknown type '%s' on line %d of file '%s'\n",
+                type_name, line, filename
         exit 1
     }
 }
@@ -94,15 +94,16 @@ function type2format(type_name) {
     if (type_name in printf_format) {
         return printf_format[type_name]
     } else {
-        printf "Error: type '%s' on line %d has no print format\n",
-                type_name, line
+        printf "Error: type '%s' on line %d of file '%s' has no print format\n",
+                type_name, line, filename
         exit 1
     }
 }
 
 function add_var(name, type_name) {
     if (name in data_type) {
-        printf "Error: variable %s redeclared on line %d\n", name, line
+        printf "Error: variable %s redeclared on line %d of file %s\n",
+                name, line, filename
         exit 1
     } else {
         data_type[name] = type_name
@@ -147,6 +148,7 @@ BEGIN {
     data_type["foo"] = "bar"
     # Original source code file line.
     line = 0
+    filename = ""
     declare_only = 0
 
     # The number of arguments the current subroutine has.
@@ -228,6 +230,11 @@ BEGIN {
             "\n#include \"gc.h\"\n#include \"sds.h\"\n#include \"cprelude.h\"\n"
 }
 
+/^-- Filename/ {
+    offset = 13
+    filename = _read_string()
+}
+
 /^-- Line/ {
     line = $3
 }
@@ -268,7 +275,7 @@ BEGIN {
     not = substr($0, 2, 1) == "T" ? "" : "!"
     if (find_data_type($3) != "bool") {
         printf "Error: nonboolean expression used for conditional on line" \
-                " %d\n", line
+                " %d of file '%s'\n", line, filename
         exit 1
     }
     emit("if (" not $3 ") { goto " $2 "; }")
@@ -338,8 +345,9 @@ function find_data_type(ident_or_literal) {
 
         expression_type = return_data_type[func_name]
         if (expression_type == "") {
-            printf "Error: undeclared function '%s' used on line %d\n",
-                    func_name, line
+            printf "Error: undeclared function '%s' used on line %d of " \
+                    "file '%s'\n",
+                    func_name, line, filename
             exit 1
         }
 
@@ -350,9 +358,10 @@ function find_data_type(ident_or_literal) {
             func_arg_type = find_data_type(func_arg)
             if (!match_type(arg_data_type[func_name, i], func_arg_type)) {
                 printf "Error: expected argument number %d to function '%s' " \
-                        "to be type '%s' but got type '%s' on line %d\n",
+                        "to be type '%s' but got type '%s' on line %d of " \
+                        "file '%s'\n",
                         i + 1, func_name, arg_data_type[func_name, i],
-                        func_arg_type, line
+                        func_arg_type, line, filename
                 exit 1
             }
             offset++
@@ -390,35 +399,38 @@ function find_data_type(ident_or_literal) {
                 op = op "_NUM"
             } else {
                 printf "Error: expected boolean or numerical arguments to " \
-                        "operator '%s' on line %d\n", op, line
+                        "operator '%s' on line %d of file '%s'\n",
+                        op, line, filename
                 exit 1
             }
         } else if (is_num_op(op) || is_num_comp(op)) {
             if (!is_numerical_type(arg1_type) \
                     || !is_numerical_type(arg2_type)) {
                 printf "Error: expected numerical arguments to operator '%s' " \
-                        "on line %d\n", op, line
+                        "on line %d of file '%s'\n", op, line, filename
                 exit 1
             }
             if (matched_type) {
                 expression_type = is_num_comp(op) ? "bool" : matched_type
             } else {
                 printf "Internal error: can't determine expression type" \
-                        " (op:'%s', arg1:'%s', arg2:'%s')\n",
-                        op, arg1, arg2
+                        " (op:'%s', arg1:'%s', arg2:'%s') on line %d " \
+                        "of file '%s'\n",
+                        op, arg1, arg2, line, filename
                 exit 99
             }
         } else if (is_str_op(op) || is_str_comp(op)) {
             if (arg1_type != "string" || arg2_type != "string") {
                 printf "Error: expected string arguments to operator '%s' " \
-                        "on line %d\n", op, line
+                        "on line %d of file '%s'\n", op, line, filename
                 exit 1
             }
             expression_type = is_str_comp(op) ? "bool" : "string"
         } else {
             printf "Internal error: can't determine expression type" \
-                    " (op:'%s', arg1:'%s', arg2:'%s')\n",
-                    op, arg1, arg2
+                    " (op:'%s', arg1:'%s', arg2:'%s') on line %d " \
+                    "of file '%s'\n",
+                    op, arg1, arg2, line, filename
             exit 99
         }
         if (1) {
@@ -435,8 +447,8 @@ function find_data_type(ident_or_literal) {
         if (data_type[target_var] != expression_type && 
                 # Allow assigning any integer type to any other integer type.
                 !(match_type(data_type[target_var], expression_type))) {
-            printf "Error: use of type '%s' as '%s' on line %d\n",
-                    expression_type, data_type[target_var], line
+            printf "Error: use of type '%s' as '%s' on line %d of file '%s'\n",
+                    expression_type, data_type[target_var], line, filename
             exit 1
         }
     } else {

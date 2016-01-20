@@ -16,15 +16,17 @@ function skip_newline() {
 function expect_token(t, v,   current_value) {
     if (type[current] == t) {
         if (v != "" && value[current] != v) {
-            printf "Error: expected token '%s' but got '%s' on line %d\n",
-                    v, value[current], source[current]
+            printf "Error: expected token '%s' but got '%s' on line %d of " \
+                    "file '%s'\n",
+                    v, value[current], source[current], filename
             exit 1
         }
         current_value = value[current]
         current++
     } else {
-        printf "Error: expected token '%s' but got '%s' on line %d\n",
-                t, type[current], source[current]
+        printf "Error: expected token '%s' but got '%s' on line %d of " \
+                "file '%s'\n",
+                t, type[current], source[current], filename
         exit 1
     }
     skip_newline()
@@ -51,7 +53,12 @@ function make_label() {
 
 function parse_module() {
     while (current < count) {
-        if (type[current] == "DECLARE") {
+        if (type[current] == "FILENAME") {
+            current++
+            filename = expect_token("STRING")
+            emit("-- Filename " filename)
+            skip_newline()
+        } else if (type[current] == "DECLARE") {
             expect_token("DECLARE")
             emit("DECLARE")
             parse_sub_declaration()
@@ -59,8 +66,9 @@ function parse_module() {
         } else if (type[current] == "SUB") {
             parse_sub()
         } else {   
-            printf "Error: expected a subroutine at line %d but got %s\n",
-                    source[current], type[current]
+            printf "Error: expected a subroutine on line %d of file '%s' " \
+                    "but got '%s'\n",
+                    source[current], filename, type[current]
             exit 1
         }
     }
@@ -245,8 +253,9 @@ function parse_statement(    ctt) {
     } else if (ctt == "IDENT") {
         parse_function_call()
     } else {
-        printf "Error: expected a statement but got '%s' on line %d\n",
-                ctt, source[current]
+        printf "Error: expected a statement but got '%s' on line %d of " \
+                "file %s\n",
+                ctt, source[current], filename
         exit 1
     }
 }
@@ -319,8 +328,9 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
             }
             if (op_stack[size - 1] == "(") {
             } else {
-                printf "Error: mismatched parenthesis on line %d\n",
-                        source[current]
+                printf "Error: mismatched parenthesis on line %d of " \
+                        "file '%s'\n",
+                        source[current], filename
                 exit 1
             }
         } else if (ctt == ")") {
@@ -330,8 +340,9 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
             if (op_stack[size - 1] == "(") {
                 size--
             } else {
-                printf "Error: mismatched parenthesis on line %d\n",
-                        source[current]
+                printf "Error: mismatched parenthesis on line %d of " \
+                        "file '%s'\n",
+                        filename, source[current]
                 exit 1
             }
             if (match(op_stack[size - 1], /[a-zA-Z][a-zA-Z0-9_]*/) \
@@ -366,8 +377,8 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
     size--
     for (; size >= 0; size--) {
         if (op_stack[size] == "(") {
-            printf "Error: mismatched parenthesis on line %d\n",
-                    source[current]
+            printf "Error: mismatched parenthesis on line %d of file '%s'\n",
+                    source[current], filename
             exit 1
         }
         emit_operator(op_stack[size])

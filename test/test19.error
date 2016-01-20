@@ -1,1 +1,1 @@
-Error: expected argument number 1 to function 'foo' to be type 'int64' but got type 'string' on line 5
+Error: expected argument number 1 to function 'foo' to be type 'int64' but got type 'string' on line 5 of file 'test/test19.bas'

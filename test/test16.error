@@ -1,1 +1,1 @@
-Error: use of type 'int32' as 'string' on line 11
+Error: use of type 'int32' as 'string' on line 11 of file 'test/test16.bas'

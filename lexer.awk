@@ -52,36 +52,42 @@ function read_string() {
 BEGIN {
     content = ""
     count = 0 # Token counter.
+    escape_newline = 0
     line = 0 # Source code line counter.
     type[0] = "" # Token type.
     value[0] = "" # Token value.
     source[0] = "" # The source code line the token came from.
 
-    literal_count = 0
-    literal[literal_count++] = "AS"
-    literal[literal_count++] = "BREAK"
-    literal[literal_count++] = "CONTINUE"
-    literal[literal_count++] = "DECLARE"
-    literal[literal_count++] = "DIM"
-    literal[literal_count++] = "ELSEIF"
-    literal[literal_count++] = "ELSE"
-    literal[literal_count++] = "END"
-    literal[literal_count++] = "FOR"
-    literal[literal_count++] = "IF"
-    literal[literal_count++] = "LET"
-    literal[literal_count++] = "PRINT"
-    literal[literal_count++] = "RETURN"
-    literal[literal_count++] = "SUB"
-    literal[literal_count++] = "TO"
-    literal[literal_count++] = "WHILE"
-    literal[literal_count++] = ")"
-    literal[literal_count++] = "("
-    literal[literal_count++] = ","
+    keyword_count = 0
+    keyword[keyword_count++] = "AS"
+    keyword[keyword_count++] = "BREAK"
+    keyword[keyword_count++] = "CONTINUE"
+    keyword[keyword_count++] = "DECLARE"
+    keyword[keyword_count++] = "DIM"
+    keyword[keyword_count++] = "ELSEIF"
+    keyword[keyword_count++] = "ELSE"
+    keyword[keyword_count++] = "END"
+    keyword[keyword_count++] = "FOR"
+    keyword[keyword_count++] = "IF"
+    keyword[keyword_count++] = "LET"
+    keyword[keyword_count++] = "PRINT"
+    keyword[keyword_count++] = "RETURN"
+    keyword[keyword_count++] = "SUB"
+    keyword[keyword_count++] = "TO"
+    keyword[keyword_count++] = "WHILE"
+    keyword[keyword_count++] = ")"
+    keyword[keyword_count++] = "("
+    keyword[keyword_count++] = ","
 
     set_up_op_tables()
 }
 
 1 {
+    if (FNR == 1) {
+        # Prepend filename to file contents.
+        content = (content == "" ? "0" : content "\n") \
+                "FILENAME \"" FILENAME "\""
+    }
     content = content "\n" $0
 }
 
@@ -102,8 +108,15 @@ END {
             continue
         }
 
-        for (i = 0; i < literal_count; i++) {
-            if (read_exact(literal[i])) {
+        if (read_exact("FILENAME")) {
+            source[count - 1] = 0
+            filename = FILENAME
+            line = 0
+            continue
+        }
+
+        for (i = 0; i < keyword_count; i++) {
+            if (read_exact(keyword[i])) {
                 matched = 1
                 break
             }
@@ -203,8 +216,8 @@ END {
             offset++
         } else {
             if (escape_newline) {
-                printf "Error: expected a newline after '\\' at line %d\n", \
-                        line
+                printf "Error: expected a newline after '\\' at line %d of " \
+                        "file '%s'\n", line, filename
                 exit 1
             }
             offset++
