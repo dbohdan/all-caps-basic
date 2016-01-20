@@ -73,7 +73,10 @@ if expr "$verbose" % 2 >/dev/null; then
     echo '### End lexer output ###'
     echo ''
 fi
-expr "$exit" >/dev/null && exit 1
+if [ "$exit" -gt 0 ]; then
+    cat "$temp_lex_file"
+    exit 1
+fi
 
 # Parse.
 $awk -f "$compiler_dir/library.awk" -f "$compiler_dir/parser.awk" \
@@ -85,7 +88,10 @@ if expr "$verbose" / 2 % 2 >/dev/null; then
     echo '### End parser output ###'
     echo ''
 fi
-expr "$exit" >/dev/null && exit 2
+if [ "$exit" -gt 0 ]; then
+    cat "$temp_parse_file"
+    exit 2
+fi
 
 # Generate code.
 $awk -f "$compiler_dir/library.awk" -f "$compiler_dir/codegen.awk" \
@@ -97,7 +103,10 @@ if expr "$verbose" / 4 % 2 >/dev/null; then
     echo '### end C code ###'
     echo ''
 fi
-expr "$exit" >/dev/null && exit 3
+if [ "$exit" -gt 0 ]; then
+    cat "$temp_c_file"
+    exit 3
+fi
 
 # Compile and run.
 gcc \
