@@ -17,8 +17,7 @@ verbose=0
 
 params="$(getopt lpcv $*)"
 set -- $params
-while [ $# -ne "1" ]
-do
+while [ $# -ne 1 ]; do
     case "$1" in
         -l)
             verbose="$(expr "$verbose" + 1)"
@@ -64,8 +63,13 @@ trap "rm -f \"$temp_bin_file\" \"$temp_c_file\" \"$temp_lex_file\" \
         \"$temp_parse_file\"" 0 1 2 3 15
 
 # Lex.
-$awk -f "$compiler_dir/library.awk" -f "$compiler_dir/lexer.awk" \
-        <"$input_file" >"$temp_lex_file" || exit=1
+"$awk" -f "$compiler_dir/library.awk" -f "$compiler_dir/lexer.awk" \
+        "$compiler_dir/lib/prelude.bas" >"$temp_lex_file" || exit=1
+while [ $# -gt 0 ]; do
+    "$awk" -f "$compiler_dir/library.awk" -f "$compiler_dir/lexer.awk" \
+            "$1" >>"$temp_lex_file" || exit=1
+    shift
+done
 if expr "$verbose" % 2 >/dev/null; then
     echo '### Lexer output ###'
     echo ''
@@ -79,7 +83,7 @@ if [ "$exit" -gt 0 ]; then
 fi
 
 # Parse.
-$awk -f "$compiler_dir/library.awk" -f "$compiler_dir/parser.awk" \
+"$awk" -f "$compiler_dir/library.awk" -f "$compiler_dir/parser.awk" \
         <"$temp_lex_file" >"$temp_parse_file" || exit=1
 if expr "$verbose" / 2 % 2 >/dev/null; then
     echo '### Parser output ###'
@@ -94,7 +98,7 @@ if [ "$exit" -gt 0 ]; then
 fi
 
 # Generate code.
-$awk -f "$compiler_dir/library.awk" -f "$compiler_dir/codegen.awk" \
+"$awk" -f "$compiler_dir/library.awk" -f "$compiler_dir/codegen.awk" \
         <"$temp_parse_file" >"$temp_c_file" || exit=1
 if expr "$verbose" / 4 % 2 >/dev/null; then
     echo '### C code ###'
@@ -114,6 +118,7 @@ gcc \
         -I"$compiler_dir/include" \
         -L"$compiler_dir/lib" \
         "$temp_c_file" \
+        "$compiler_dir/lib/cprelude.c" \
         "$compiler_dir/deps/sds/sds.c" \
         -o "$temp_bin_file" \
         -lgc || exit 4

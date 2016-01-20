@@ -5,4 +5,7 @@
 #define TRUE true
 #define FALSE false
 
+float double2float(double x);
+double float2double(float x);
+
 #endif
