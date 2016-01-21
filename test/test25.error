@@ -1,0 +1,1 @@
+Error: attempt to return type 'double' when 'int32' was expected from function 'foo' on line 2 of file 'test/test25.bas'

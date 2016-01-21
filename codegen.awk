@@ -325,13 +325,20 @@ BEGIN {
     return_data_type[sub_name] = $2
 }
 
-/^RETURN/ {
-    emit("return " $2 ";")
-}
-
 function find_data_type(ident_or_literal) {
     return token_type(ident_or_literal) == "IDENT" ? \
             data_type[ident_or_literal] : literal_data_type(ident_or_literal)
+}
+
+/^RETURN/ {
+    if (!match_type(return_data_type[sub_name], find_data_type($2))) {
+        printf "Error: attempt to return type '%s' when '%s' was expected " \
+                "from function '%s' on line %d of file '%s'\n",
+                find_data_type($2), return_data_type[sub_name], sub_name,
+                line, filename
+        exit 1
+    }
+    emit("return " $2 ";")
 }
 
 /^SET/ {
