@@ -296,7 +296,8 @@ function emit_operator(op,    temp) {
 
 # A version of the shunting-yard algorithm.
 # https://en.wikipedia.org/wiki/Shunting-yard_algorithm
-function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
+function parse_expression(    ctt, ctv, argc, depth, op_stack, size, temp,
+        end) {
     # Globals
     arg_queue[0] = ""
     queue_size = 0
@@ -304,7 +305,8 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
     op_stack[0] = ""
     size = 0 # Stack size.
     end = 0
-    argc = -1 # The argument count of the current function.
+    depth = 0 # Nested function call count.
+    argc[0] = -1 # The argument count of the current function.
 
     while (!end) {
         ctt = type[current]
@@ -313,7 +315,8 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
         if (ctt == "IDENT" || is_literal_type(ctt)) {
             if (ctt == "IDENT" && type[current] == "(") {
                 op_stack[size] = ctv
-                argc = type[current + 1] == ")" ? 0 : 1
+                depth++
+                argc[depth - 1] = type[current + 1] == ")" ? 0 : 1
                 size++
             } else {
                 arg_queue[queue_size] = ctv
@@ -323,12 +326,12 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
             op_stack[size] = "("
             size++
         } else if (ctt == ",") {
-            if (argc == -1) {
+            if (depth == 0) {
                 # If we are not in a function call.
                 current--
                 break
             }
-            argc++
+            argc[depth - 1]++
             for (; (op_stack[size - 1] != "(") && (size > 0); size--) {
                 emit_operator(op_stack[size - 1])
             }
@@ -355,13 +358,14 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
                         && !is_operator(op_stack[size - 1])) {
                 temp = make_temp_var()
                 printf "SETFUNC %s %s ", temp, op_stack[size - 1]
-                for (i = queue_size - argc; i < queue_size; i++) {
+                for (i = queue_size - argc[depth - 1]; i < queue_size; i++) {
                     printf "%s ", arg_queue[i]
                 }
                 printf "\n"
-                queue_size -= argc
+                queue_size -= argc[depth - 1]
                 arg_queue[queue_size] = temp
-                argc = -1
+                argc[depth - 1] = -1
+                depth--
                 queue_size++
 
                 size--
