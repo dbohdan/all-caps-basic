@@ -1,4 +1,4 @@
-SUB fib(n)
+SUB fib(n) as int32
     LET a = 1
     LET b = 1
     FOR i = 1 TO n - 1

@@ -184,3 +184,7 @@ function _read_string(    string, escape, success, c) {
 
     return string
 }
+
+function debug_print(v1, v2, v3, v4, v5) {
+    print "|" v1 "|" v2 "|" v3 "|" v4 "|" v5 "|"
+}

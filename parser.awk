@@ -1,6 +1,6 @@
 #!/usr/bin/awk -f
-# Parser. Takes a steam of tokens and transforms it into the intermediate
-# representation format.
+# Parser. Takes a stream of tokens and transforms it into intermediate
+# representation.
 
 function emit(s) {
     printf "%s\n", s

@@ -1,5 +1,5 @@
 #!/usr/bin/awk -f
-# Code generator. Check that the program is correctly typed and translates the
+# Code generator. Checks that the program is correctly typed and translates the
 # intermediate representation into C code.
 
 function char() {
@@ -46,12 +46,19 @@ function emit_sub(    i) {
 
 # Reset the required variables at the start of a new subroutine.
 function start_sub(    key) {
-    return_data_type[sub_name] = default_data_type
+    return_data_type[sub_name] = sub_name == "main" ? "int32" : "void"
     arg_count = 0
     sub_line_count = 0
     for (key in data_type) {
         delete data_type[key]
         delete is_pointer[key]
+    }
+}
+
+function init_var(ident,    type) {
+    type = data_type[ident]
+    if (type != "void") {
+        printf "%s %s = %s;\n", type2c(type), key, default_value[type]
     }
 }
 
@@ -76,8 +83,7 @@ function end_sub() {
             }
         }
         if (!is_argument) {
-            printf "%s %s = %s;\n", type2c(data_type[key]), key,
-                    default_value[data_type[key]]
+            init_var(key)
         }
     }
 }
@@ -121,6 +127,8 @@ function set2c(target, op, arg1, arg2,    temp) {
     target = wrap_pointer(target)
     arg1 = wrap_pointer(arg1)
     arg2 = wrap_pointer(arg2)
+
+
 
     if (op in op2c_table) {
         return target " = " arg1 " " op2c_table[op] " " arg2 ";"
@@ -231,6 +239,7 @@ BEGIN {
     type2c_table["bool"] = "bool"
     type2c_table["string"] = "sds"
     type2c_table["cstring"] = "char*"
+    type2c_table["void"] = "void"
 
     default_value["int8"] = "0"
     default_value["int16"] = "0"
@@ -382,7 +391,8 @@ function find_data_type(ident_or_literal) {
             exit 1
         }
 
-        s = target_var " = " func_name "("
+        s = (expression_type == "void" ? "" : target_var " = ") \
+                func_name "("
         i = 0
         while (offset <= length($0)) {
             func_arg = read_literal_or_ident()
@@ -419,6 +429,12 @@ function find_data_type(ident_or_literal) {
         }
 
         matched_type = match_type(arg1_type, arg2_type)
+        if (arg1_type == "void" || arg2_type == "void") {
+            printf "Error: trying to use a void type in an expression "\
+                    "on line %d of file '%s'\n",
+                    line, filename
+            exit 1
+        }
 
         if (op == "") {
             # Simple assignment.
