@@ -28,7 +28,7 @@ function set_up_op_tables() {
 
     # str -> bool
     str_comp_count = 0
-    str_comp[st_count++] = "EQ"
+    str_comp[str_comp_count++] = "EQ"
     str_comp[str_comp_count++] = "NE"
 }
 

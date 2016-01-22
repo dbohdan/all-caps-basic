@@ -110,14 +110,24 @@ function add_var(name, type_name) {
     }
 }
 
-# Map operator op to its C equivalent.
-function op2c(op, arg1, arg2) {
+# Map the IR instruction SET<operator> to its C equivalent.
+function set2c(target, op, arg1, arg2,    temp) {
     if (op in op2c_table) {
-        return arg1 " " op2c_table[op] " " arg2
+        return target " = " arg1 " " op2c_table[op] " " arg2 ";"
     } else if (op == "&") {
-        return "sdscatprintf(sdsempty(), \"%s%s\", " arg1 ", " arg2 ")"
+        temp = target " = sdsempty();\n"
+        temp = temp target " = sdscat(" target ", " arg1 ");\n"
+        temp = temp target " = sdscat(" target ", " arg2 ");"
+        return temp
+    } else if (op == "EQ" || op == "NE")  {
+        return target " = sdscmp(" arg1 ", " arg2 ") " \
+                (op == "EQ" ? "==" : "!=")  " 0;"
     } else if (op == "") {
-        return arg1
+        if (find_data_type(arg1) == "string") {
+            return target " = sdsnew(" arg1 ");"
+        } else {
+            return target " = " arg1 ";"
+        }
     }
 }
 
@@ -446,7 +456,7 @@ function find_data_type(ident_or_literal) {
                     arg1_type, op, arg2_type, expression_type,
                     is_numerical_type(arg1_type), is_numerical_type(arg1_type)
         }
-        emit(target_var " = " op2c(op, arg1, arg2) ";")    
+        emit(set2c(target_var, op, arg1, arg2))
     }
 
     # Type checking.
