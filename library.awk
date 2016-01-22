@@ -16,11 +16,11 @@ function set_up_op_tables() {
     # num -> bool
     num_comp_count = 0
     num_comp[num_comp_count++] = "="
+    num_comp[num_comp_count++] = "<>"
     num_comp[num_comp_count++] = "<="
     num_comp[num_comp_count++] = ">="
     num_comp[num_comp_count++] = "<"
     num_comp[num_comp_count++] = ">"
-    num_comp[num_comp_count++] = "<>"
 
     # str -> str
     str_op_count = 0
