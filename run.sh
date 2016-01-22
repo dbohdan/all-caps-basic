@@ -54,7 +54,7 @@ if [ "$#" -eq "0" ] || [ ! -e "$1" ]; then
 fi
 input_file="$1"
 temp_bin_file="$(mktemp)"
-temp_c_file="$(mktemp tmp.XXXXXXXXXX.c)"
+temp_c_file="$(mktemp "$(dirname "$temp_bin_file")"/tmp.XXXXXXXXXX.c)"
 temp_lex_file="$(mktemp)"
 temp_parse_file="$(mktemp)"
 
