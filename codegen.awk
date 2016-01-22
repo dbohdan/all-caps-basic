@@ -273,6 +273,12 @@ BEGIN {
 /^ARG/ {
     ident = $2
     data_type[ident] = $3 == "" ? default_data_type : $3
+    if (data_type[ident] == "void") {
+        printf "Error: declared sub argument '%s' as type 'void' " \
+                "on line %d of file '%s'\n",
+                ident, line, filename
+        exit 1
+    }
     is_pointer[ident] = $4 == "BYREF"
     arg_data_type[sub_name, arg_count, "type"] = data_type[ident]
     arg_data_type[sub_name, arg_count, "byref"] = is_pointer[ident]
@@ -285,6 +291,12 @@ BEGIN {
 }
 
 /^DIM/ {
+    if ($3 == "void") {
+        printf "Error: declared variable '%s' as type 'void' " \
+                "on line %d of file '%s'\n",
+                $2, line, filename
+        exit 1
+    }
     add_var($2, $3)
 }
 
