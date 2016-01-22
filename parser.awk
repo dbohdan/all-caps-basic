@@ -256,7 +256,8 @@ function parse_statement(    ctt) {
     } else if (ctt == "WHILE") {
         parse_while_loop()
     } else if (ctt == "IDENT") {
-        parse_function_call()
+        parse_expression()
+        skip_newline()
     } else {
         printf "Error: expected a statement but got '%s' on line %d of " \
                 "file %s\n",
