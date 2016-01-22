@@ -100,7 +100,7 @@ END {
     while (offset < len) {
         matched = 0
 
-        if (read_exact("REM") || read_exact("#")) {
+        if (read_exact("REM") || read_exact("#") || read_exact("'")) {
             # Do not put the comment start token in the output stream.
             count--
             while (char() != "\n") {
