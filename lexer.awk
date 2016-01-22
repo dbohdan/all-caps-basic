@@ -5,10 +5,6 @@ function char() {
     return substr(content, offset + 1, 1)
 }
 
-function is_whitespace(s) {
-    return match(s, /[ \t\n]+/);
-}
-
 function emit_token(token_type, token_value) {
     type[count] = token_type
     value[count] = token_value
@@ -19,11 +15,16 @@ function emit_token(token_type, token_value) {
 # Below, function arguments after the four spaces in the function declaration
 # are used to create local variables. They are not expected to be used when
 # calling the function.
-function read_exact(keyword,    actual, success) {
+function read_exact(keyword,    actual, char_after, success) {
     actual = substr(content, offset + 1, length(keyword))
+    chars_after = substr(content, offset + 1 + length(keyword), 2)
     success = 0
 
-    if (toupper(actual) == keyword) {
+    # Require that an alphabetical keyword be followed by whitespace to avoid
+    # conflicts with identifiers starting with the same characters as a keyword.
+    if (toupper(actual) == keyword \
+                && (!match(keyword, /^[A-Z]+$/) \
+                        || match(chars_after, /( |\t|\n|\\\n)/))) {
         emit_token(keyword, "")
         offset += length(keyword)
         success = 1

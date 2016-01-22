@@ -318,7 +318,7 @@ function parse_expression(    ctt, ctv, argc, op_stack, size, temp, end) {
             size++
         } else if (ctt == ",") {
             if (argc == -1) {
-                # If we are not in a function.
+                # If we are not in a function call.
                 current--
                 break
             }
