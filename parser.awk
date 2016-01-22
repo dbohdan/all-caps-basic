@@ -74,7 +74,7 @@ function parse_module() {
     }
 }
 
-function parse_sub_declaration(    ident, data_type, list_end) {
+function parse_sub_declaration(    ident, by_ref, data_type, list_end) {
     expect_token("SUB")
     ident = expect_token("IDENT")
     expect_token("(")
@@ -82,6 +82,11 @@ function parse_sub_declaration(    ident, data_type, list_end) {
 
     list_end = curr_token_type() == ")"
     while (!list_end) {
+        by_ref = 0
+        if (curr_token_type() == "BYREF") {
+            expect_token("BYREF")
+            by_ref = 1
+        }
         ident = expect_token("IDENT")
         data_type = ""
         if (curr_token_type() == "AS") {
@@ -93,7 +98,7 @@ function parse_sub_declaration(    ident, data_type, list_end) {
         } else {
             expect_token(",")
         }
-        emit("ARG " ident " " data_type)
+        emit("ARG " ident " " data_type (by_ref ? " BYREF" : ""))
     }
     expect_token(")")
     if (curr_token_type() == "AS") {

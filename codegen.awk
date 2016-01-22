@@ -51,6 +51,7 @@ function start_sub(    key) {
     sub_line_count = 0
     for (key in data_type) {
         delete data_type[key]
+        delete is_pointer[key]
     }
 }
 
@@ -58,7 +59,8 @@ function end_sub() {
     emit("}\n")
     printf type2c(return_data_type[sub_name]) " %s(", sub_name
     for (i = 0; i < arg_count; i++) {
-        printf "%s %s", type2c(data_type[arg[i]]), arg[i]
+        printf "%s%s %s", type2c(data_type[arg[i]]),
+                arg_data_type[sub_name, i, "byref"] ? "*" : "", arg[i]
         if (i != arg_count - 1) {
             printf ", "
         }
@@ -110,8 +112,16 @@ function add_var(name, type_name) {
     }
 }
 
+function wrap_pointer(ident) {
+    return (is_pointer[ident] ? "*" : "") ident
+}
+
 # Map the IR instruction SET<operator> to its C equivalent.
 function set2c(target, op, arg1, arg2,    temp) {
+    target = wrap_pointer(target)
+    arg1 = wrap_pointer(arg1)
+    arg2 = wrap_pointer(arg2)
+
     if (op in op2c_table) {
         return target " = " arg1 " " op2c_table[op] " " arg2 ";"
     } else if (op == "&") {
@@ -153,9 +163,11 @@ function match_type(t1, t2) {
 
 BEGIN {
     return_data_type["not"] = "bool"
-    arg_data_type["not","0"] = "bool"
+    arg_data_type["not", 0, "type"] = "bool"
+    arg_data_type["not", 0, "byref"] = 0
     # Variable data type array.
     data_type["foo"] = "bar"
+    is_pointer["foo"] = 0
     # Original source code file line.
     line = 0
     filename = ""
@@ -252,7 +264,9 @@ BEGIN {
 /^ARG/ {
     ident = $2
     data_type[ident] = $3 == "" ? default_data_type : $3
-    arg_data_type[sub_name, arg_count] = data_type[ident]
+    is_pointer[ident] = $4 == "BYREF"
+    arg_data_type[sub_name, arg_count, "type"] = data_type[ident]
+    arg_data_type[sub_name, arg_count, "byref"] = is_pointer[ident]
     arg[arg_count] = ident
     arg_count++
 }
@@ -348,7 +362,7 @@ function find_data_type(ident_or_literal) {
                 line, filename
         exit 1
     }
-    emit("return " $2 ";")
+    emit("return " wrap_pointer($2) ";")
 }
 
 /^SET/ {
@@ -373,11 +387,12 @@ function find_data_type(ident_or_literal) {
         while (offset <= length($0)) {
             func_arg = read_literal_or_ident()
             func_arg_type = find_data_type(func_arg)
-            if (!match_type(arg_data_type[func_name, i], func_arg_type)) {
+            if (!match_type(arg_data_type[func_name, i, "type"],
+                    func_arg_type)) {
                 printf "Error: expected argument number %d to function '%s' " \
                         "to be type '%s' but got type '%s' on line %d of " \
                         "file '%s'\n",
-                        i + 1, func_name, arg_data_type[func_name, i],
+                        i + 1, func_name, arg_data_type[func_name, i, "type"],
                         func_arg_type, line, filename
                 exit 1
             }
@@ -385,7 +400,8 @@ function find_data_type(ident_or_literal) {
             if (i > 0) {
                 s = s ", "
             }
-            s = s func_arg
+            s = s (arg_data_type[func_name, i, "byref"] ? "&" : "") \
+                    wrap_pointer(func_arg)
             i++
         }
         s = s ");"

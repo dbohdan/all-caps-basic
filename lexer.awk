@@ -62,6 +62,7 @@ BEGIN {
     keyword_count = 0
     keyword[keyword_count++] = "AS"
     keyword[keyword_count++] = "BREAK"
+    keyword[keyword_count++] = "BYREF"
     keyword[keyword_count++] = "CONTINUE"
     keyword[keyword_count++] = "DECLARE"
     keyword[keyword_count++] = "DIM"
