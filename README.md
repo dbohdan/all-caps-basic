@@ -1,6 +1,6 @@
 # ALL CAPS BASIC
 
-ALL CAPS BASIC (tentative name, since it no longer requires the source code to be in all caps) is a compiler written in [Awk](https://en.wikipedia.org/wiki/AWK). It compiles a Basic-like programming language through [modern C](https://en.wikipedia.org/wiki/C99). It is intended to be a kind of working model compiler each piece of which is transparent. For this reason all data formats used by the compiler are text-based.
+ALL CAPS BASIC (tentative name, since it no longer requires the source code to be in all caps) is a compiler written in [Awk](https://en.wikipedia.org/wiki/AWK). It compiles a statically typed, garbage-collected Basic-like programming language to native code through [modern C](https://en.wikipedia.org/wiki/C99). It is intended to be a kind of working model compiler each piece of which is transparent. For this reason all data formats used by the compiler are text-based.
 
 **Warning!** This is **very much** a work in progress and incomplete. Please do **not** submit it to Hacker News, Reddit, etc.
 
