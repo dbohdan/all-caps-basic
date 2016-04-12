@@ -41,6 +41,12 @@ sub main()
 end
 ```
 
+## Dependencies
+
+ACB should work with any POSIX-compatible Awk. It has been tested with nawk, [mawk](http://invisible-island.net/mawk/mawk.html) and [GNU Awk](https://www.gnu.org/software/gawk/). It does not rely on the GNU-specific extensions.
+
+To produce native binaries you will need a C99-compatible C compiler like GCC or clang.
+
 ## Language grammar
 
 The parser is hand-written, so this may not be accurate. It does not account for comments; those can be thought of as removed at a separate, line-based parsing stage.
